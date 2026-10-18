@@ -9,12 +9,20 @@ export const CITIES: City[] = [
 
 const memory = new Map<string, Venue>()
 
+function isHiddenVenue(name?: string, description?: string) {
+  const label = `${name || ''} ${description || ''}`.toLowerCase()
+  return label.includes('sex shop') || label.includes('sex toy')
+}
+
 function hydrateVenues() {
   try {
     const raw = sessionStorage.getItem('wolt-venues')
     if (!raw) return
     const list = JSON.parse(raw) as Venue[]
-    for (const venue of list) memory.set(venue.id, venue)
+    for (const venue of list) {
+      if (isHiddenVenue(venue.name, venue.description)) continue
+      memory.set(venue.id, venue)
+    }
   } catch {
     /* ignore quota or private mode */
   }
@@ -74,6 +82,7 @@ type RawPage = { page_title?: string; name?: string; sections?: RawSection[] }
 function asVenue(item: RawItem): Venue | null {
   const venue = item.venue
   if (!venue?.id) return null
+  if (isHiddenVenue(venue.name, venue.short_description)) return null
   const volume = venue.rating?.volume ?? 0
   return {
     id: venue.id,
@@ -99,6 +108,7 @@ function asVenue(item: RawItem): Venue | null {
 function asBanner(item: RawItem): Banner | null {
   const image = item.image?.url
   if (!image) return null
+  if (isHiddenVenue(item.title, item.aria_label)) return null
   return {
     id: item.content_id || item.track_id || image,
     title: item.title || item.aria_label || '',
