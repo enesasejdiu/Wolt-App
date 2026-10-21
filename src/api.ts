@@ -1,4 +1,4 @@
-import type { Banner, City, DiscoveryPage, Menu, MenuItem, OptionGroup, Section, Venue } from './types'
+import type { Banner, City, DiscoveryPage, Menu, MenuItem, OptionGroup, Section, StoreCategory, Venue } from './types'
 
 export const CITIES: City[] = [
   { slug: 'pristina', name: 'Pristina', lat: 42.660596643112, lon: 21.160729663098635 },
@@ -11,7 +11,7 @@ const memory = new Map<string, Venue>()
 
 function isHiddenVenue(name?: string, description?: string) {
   const label = `${name || ''} ${description || ''}`.toLowerCase()
-  return label.includes('sex shop') || label.includes('sex toy')
+  return label.includes('sex shop') || label.includes('sex toy') || label.includes('erotic')
 }
 
 function hydrateVenues() {
@@ -87,7 +87,7 @@ function asVenue(item: RawItem): Venue | null {
   return {
     id: venue.id,
     slug: venue.slug,
-    name: venue.name,
+    name: venue.name.trim(),
     description: venue.short_description || '',
     image: item.image?.url || '',
     rating: volume > 0 ? venue.rating?.score ?? null : null,
@@ -214,38 +214,39 @@ type RawMenu = {
   options?: RawOption[]
 }
 
+function optionGroups(refs: RawItemOption[] | undefined, groups: Map<string, RawOption>): OptionGroup[] {
+  return (refs || [])
+    .map((ref) => {
+      const group = groups.get(ref.parent || '') || groups.get(ref.id || '')
+      const values = (group?.values || []).map((value) => ({
+        id: value.id,
+        name: value.name,
+        price: value.price || 0,
+      }))
+      return {
+        id: ref.parent || ref.id || group?.id || 'options',
+        name: ref.name || group?.name || 'Options',
+        min: ref.minimum_total_selections || 0,
+        max: ref.maximum_total_selections || 0,
+        values,
+      }
+    })
+    .filter((group) => group.values.length > 0)
+}
+
 export function fetchMenu(venueId: string): Promise<Menu> {
   return getJson<RawMenu>(`/wolt/v4/venues/${venueId}/menu`).then((data) => {
     const groups = new Map((data.options || []).map((option) => [option.id, option]))
-    const items: MenuItem[] = (data.items || []).map((item) => {
-      const options: OptionGroup[] = (item.options || [])
-        .map((ref) => {
-          const group = groups.get(ref.parent || '') || groups.get(ref.id || '')
-          const values = (group?.values || []).map((value) => ({
-            id: value.id,
-            name: value.name,
-            price: value.price || 0,
-          }))
-          return {
-            id: ref.parent || ref.id || group?.id || 'options',
-            name: ref.name || group?.name || 'Options',
-            min: ref.minimum_total_selections || 0,
-            max: ref.maximum_total_selections || 0,
-            values,
-          }
-        })
-        .filter((group) => group.values.length > 0)
-      return {
-        id: item.id,
-        categoryId: item.category || '',
-        name: item.name,
-        description: item.description || '',
-        price: item.baseprice || 0,
-        image: item.image || null,
-        enabled: item.enabled !== false && !item.disabled_info,
-        options,
-      }
-    })
+    const items: MenuItem[] = (data.items || []).map((item) => ({
+      id: item.id,
+      categoryId: item.category || '',
+      name: item.name,
+      description: item.description || '',
+      price: item.baseprice || 0,
+      image: item.image || null,
+      enabled: item.enabled !== false && !item.disabled_info,
+      options: optionGroups(item.options, groups),
+    }))
     return {
       name: data.name || '',
       categories: (data.categories || []).map((category) => ({
@@ -256,4 +257,98 @@ export function fetchMenu(venueId: string): Promise<Menu> {
       items,
     }
   })
+}
+
+type RawStoreCategory = {
+  id: string
+  name?: string
+  slug?: string
+  description?: string
+  subcategories?: RawStoreCategory[]
+}
+type RawStoreItem = {
+  id: string
+  name: string
+  description?: string
+  price?: number
+  images?: { url?: string }[]
+  disabled_info?: unknown
+  options?: RawItemOption[]
+}
+type RawStorePayload = {
+  categories?: RawStoreCategory[]
+  items?: RawStoreItem[]
+  options?: RawOption[]
+  category?: { id?: string; name?: string }
+  metadata?: { next_page_token?: string | null }
+}
+
+function cleanLabel(value?: string) {
+  const text = (value || '').replace(/\s+/g, ' ').trim()
+  return text || 'Products'
+}
+
+function mapStoreCategories(categories: RawStoreCategory[]): StoreCategory[] {
+  return categories
+    .filter((category) => category.slug)
+    .map((category) => ({
+      id: category.id,
+      name: cleanLabel(category.name),
+      slug: category.slug || category.id,
+      description: (category.description || '').replace(/\s+/g, ' ').trim(),
+      children: mapStoreCategories(category.subcategories || []),
+    }))
+}
+
+function mapStoreItems(items: RawStoreItem[], categoryId: string, groups: Map<string, RawOption>): MenuItem[] {
+  return items.map((item) => ({
+    id: item.id,
+    categoryId,
+    name: cleanLabel(item.name),
+    description: (item.description || '').replace(/\s+/g, ' ').trim(),
+    price: item.price || 0,
+    image: item.images?.find((image) => image.url)?.url || null,
+    enabled: !item.disabled_info,
+    options: optionGroups(item.options, groups),
+  }))
+}
+
+function assortmentUrl(slug: string, suffix = '') {
+  return `/consumer/consumer-api/consumer-assortment/v1/venues/slug/${encodeURIComponent(slug)}/assortment${suffix}`
+}
+
+export function fetchStoreCatalog(slug: string) {
+  return getJson<RawStorePayload>(assortmentUrl(slug, '?language=en')).then((data) => ({
+    categories: mapStoreCategories(data.categories || []),
+  }))
+}
+
+export function fetchStoreShelf(slug: string, categorySlug: string, pageToken?: string | null) {
+  const page = pageToken ? `&page_token=${encodeURIComponent(pageToken)}` : ''
+  return getJson<RawStorePayload>(assortmentUrl(slug, `/categories/slug/${encodeURIComponent(categorySlug)}?language=en${page}`)).then((data) => {
+    const groups = new Map((data.options || []).map((option) => [option.id, option]))
+    return {
+      items: mapStoreItems(data.items || [], data.category?.id || categorySlug, groups),
+      nextPage: data.metadata?.next_page_token || null,
+    }
+  })
+}
+
+export async function searchStore(slug: string, query: string) {
+  const res = await fetch(assortmentUrl(slug, '/items/search?language=en'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({ q: query }),
+  })
+  if (!res.ok) throw new Error(`Could not reach Wolt (${res.status})`)
+  const data = await res.json() as RawStorePayload
+  const groups = new Map((data.options || []).map((option) => [option.id, option]))
+  const categoryOf = new Map<string, string>()
+  for (const category of data.categories || []) {
+    for (const id of (category as RawStoreCategory & { item_ids?: string[] }).item_ids || []) categoryOf.set(id, category.id)
+  }
+  return mapStoreItems(data.items || [], '', groups).map((item) => ({
+    ...item,
+    categoryId: categoryOf.get(item.id) || item.categoryId,
+  }))
 }

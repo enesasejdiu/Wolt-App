@@ -406,6 +406,7 @@ export function Header({ onCart }: { onCart: () => void }) {
               <div className="popover right">
                 <p className="popover-label">{user.name}</p>
                 <Link to="/orders" onClick={() => setOpen(null)}>Your orders</Link>
+                <Link to="/saved" onClick={() => setOpen(null)}>Saved places</Link>
                 <button onClick={() => { logout(); setOpen(null) }}>Log out</button>
               </div>
             )}
@@ -492,13 +493,39 @@ function selectionKey(itemId: string, options: SelectedOption[], note: string) {
   return `${itemId}:${opts}:${note.trim()}`
 }
 
+export function MethodSwitch({
+  method,
+  canDeliver,
+  onChange,
+}: {
+  method: 'delivery' | 'pickup'
+  canDeliver: boolean
+  onChange: (method: 'delivery' | 'pickup') => void
+}) {
+  const selected = canDeliver ? method : 'pickup'
+  return (
+    <div className={`method is-${selected} ${canDeliver ? '' : 'is-single'}`} role="group" aria-label="How to get the order">
+      {canDeliver && (
+        <button type="button" className={selected === 'delivery' ? 'on' : ''} onClick={() => onChange('delivery')}>
+          Delivery
+        </button>
+      )}
+      <button type="button" className={selected === 'pickup' ? 'on' : ''} onClick={() => onChange('pickup')}>
+        Pickup
+      </button>
+    </div>
+  )
+}
+
 export function ItemDialog({
   item,
   venue,
+  method,
   onClose,
 }: {
   item: MenuItem
   venue: CartVenue
+  method?: 'delivery' | 'pickup'
   onClose: () => void
 }) {
   const { addLine, cart } = useApp()
@@ -548,7 +575,7 @@ export function ItemDialog({
       note: note.trim(),
       image: item.image,
     }
-    const result = addLine(venue, line, replace)
+    const result = addLine(venue, line, replace, method)
     if (result === 'conflict') {
       setConflict(true)
       return
@@ -595,7 +622,7 @@ export function ItemDialog({
           ))}
           <label className="note">
             Special requests
-            <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add a note for the restaurant" rows={2} />
+            <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add a note" rows={2} />
           </label>
         </div>
         <div className="dialog-foot">
@@ -610,7 +637,7 @@ export function ItemDialog({
         </div>
         {conflict && (
           <div className="confirm">
-            <p>Start a new order? Your cart has items from {cart.venue?.name}. Adding this will clear that order.</p>
+            <p>Start a new order? Your cart has items from {cart.venue?.name.trim()}. Adding this will clear that order.</p>
             <div>
               <button className="btn btn-ghost" onClick={() => setConflict(false)}>Cancel</button>
               <button className="btn btn-blue" onClick={() => commit(true)}>Start new order</button>
@@ -623,7 +650,7 @@ export function ItemDialog({
 }
 
 export function CartBody({ checkout }: { checkout?: boolean }) {
-  const { cart, setQty, city } = useApp()
+  const { cart, setQty, setMethod, city } = useApp()
   const quote = quoteCart(cart, city)
   if (!cart.lines.length || !cart.venue) {
     return <div className="cart-empty"><h2>Your order</h2><p>Add items from a restaurant or store to get started.</p></div>
@@ -632,6 +659,8 @@ export function CartBody({ checkout }: { checkout?: boolean }) {
     <div className="cart-body">
       <h2>Your order</h2>
       <p className="cart-from">{cart.venue.name}</p>
+      <MethodSwitch method={cart.method} canDeliver={cart.venue.online} onChange={setMethod} />
+      {!cart.venue.online && <p className="fine">Delivery opens when this place is online. Pickup is ready when you order.</p>}
       <ul>
         {cart.lines.map((line) => (
           <li key={line.key}>

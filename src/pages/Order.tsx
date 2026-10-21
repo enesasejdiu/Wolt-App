@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { peekVenue } from '../api'
+import { VenueCard } from '../components'
 import { LiveMap } from '../LiveMap'
 import { money, routeProgress, stageFor } from '../format'
 import { useApp } from '../state'
@@ -78,9 +80,31 @@ export function Tracking() {
           </ul>
           <p>Paid with {order.payment === 'cash' ? 'cash' : `card •••• ${order.cardLast4 || ''}`} · {money(order.quote.total)}</p>
         </div>
-        <Link to="/" className="btn btn-blue">Order something else</Link>
+        <div className="choice">
+          <Link to="/" className="btn btn-blue">Order something else</Link>
+          <OrderAgain orderId={order.id} />
+        </div>
       </div>
     </div>
+  )
+}
+
+function OrderAgain({ orderId }: { orderId: string }) {
+  const { orders, reorder } = useApp()
+  const navigate = useNavigate()
+  const order = orders.find((item) => item.id === orderId)
+  if (!order) return null
+  return (
+    <button
+      type="button"
+      className="btn btn-ghost"
+      onClick={() => {
+        reorder(order)
+        navigate('/checkout')
+      }}
+    >
+      Order again
+    </button>
   )
 }
 
@@ -95,15 +119,33 @@ export function Orders() {
         {orders.map((order) => {
           const stage = stageFor(order.placedAt)
           return (
-            <Link key={order.id} to={`/order/${order.id}`} className="order-row">
-              <img src={order.venue.image} alt="" />
-              <span>
-                <strong>{order.venue.name}</strong>
-                <small>{stage.label} · {money(order.quote.total)}</small>
-              </span>
-            </Link>
+            <div key={order.id} className="order-row">
+              <Link to={`/order/${order.id}`}>
+                <img src={order.venue.image} alt="" />
+                <span>
+                  <strong>{order.venue.name}</strong>
+                  <small>{stage.label} · {money(order.quote.total)}</small>
+                </span>
+              </Link>
+              <OrderAgain orderId={order.id} />
+            </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+export function Saved() {
+  const { favorites } = useApp()
+  const places = favorites.map((id) => peekVenue(id)).filter((venue) => venue !== null)
+  useEffect(() => { document.title = 'Saved | Wolt' }, [])
+  return (
+    <div className="page">
+      <h1>Saved places</h1>
+      {!places.length && <p className="lede">Save a restaurant or store and it will stay on this device.</p>}
+      <div className="grid">
+        {places.map((venue) => <VenueCard key={venue.id} venue={venue} />)}
       </div>
     </div>
   )

@@ -4,7 +4,7 @@ import { CartSheet, Header, MobileDock, TabBar } from './components'
 import { Categories, Discovery } from './pages/Discovery'
 import { ListPage, SearchPage, VenueIndex } from './pages/Browse'
 import { Checkout, LoginPage } from './pages/Checkout'
-import { Orders, Tracking } from './pages/Order'
+import { Orders, Saved, Tracking } from './pages/Order'
 import { VenuePage } from './pages/Venue'
 
 export function App() {
@@ -28,6 +28,7 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/order/:id" element={<Tracking />} />
           <Route path="/orders" element={<Orders />} />
+          <Route path="/saved" element={<Saved />} />
         </Routes>
         </div>
       </main>

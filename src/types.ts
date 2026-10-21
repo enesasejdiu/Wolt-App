@@ -83,6 +83,14 @@ export type Menu = {
   items: MenuItem[]
 }
 
+export type StoreCategory = {
+  id: string
+  name: string
+  slug: string
+  description: string
+  children: StoreCategory[]
+}
+
 export type SelectedOption = {
   groupId: string
   id: string

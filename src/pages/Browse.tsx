@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { fetchList, fetchRestaurants, fetchRetail } from '../api'
 import { ErrorNote, Loading, VenueCard, placesMatching } from '../components'
 import { useApp } from '../state'
-import type { Venue } from '../types'
+import type { Banner, Venue } from '../types'
 
 function venuesOf(sections: { venues: Venue[] }[]) {
   const seen = new Set<string>()
@@ -21,6 +21,7 @@ function venuesOf(sections: { venues: Venue[] }[]) {
 export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
   const { city } = useApp()
   const [venues, setVenues] = useState<Venue[] | null>(null)
+  const [categories, setCategories] = useState<Banner[]>([])
   const [title, setTitle] = useState(kind === 'restaurants' ? 'Restaurants' : 'Stores')
   const [error, setError] = useState('')
   const [sort, setSort] = useState('recommended')
@@ -31,6 +32,7 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
   useEffect(() => {
     let cancel = false
     setVenues(null)
+    setCategories([])
     setError('')
     setShown(48)
     const load = kind === 'restaurants' ? fetchRestaurants(city) : fetchRetail(city)
@@ -38,6 +40,7 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
       .then((page) => {
         if (cancel) return
         setTitle(page.title || title)
+        setCategories(kind === 'retail' ? page.sections.flatMap((section) => section.banners).filter((banner) => banner.title) : [])
         setVenues(venuesOf(page.sections))
       })
       .catch((err: Error) => { if (!cancel) setError(err.message) })
@@ -80,6 +83,16 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
   return (
     <div className="page">
       <h1>{title}</h1>
+      {!!categories.length && (
+        <div className="cat-grid">
+          {categories.map((banner) => (
+            <Link key={banner.id} to={banner.target ? `/list/${banner.target}` : '/stores'} className="cat-tile">
+              <img src={banner.image} alt="" />
+              <span>{banner.title}</span>
+            </Link>
+          ))}
+        </div>
+      )}
       <p className="lede">{filtered.length} places in {city.name}</p>
       <div className="filters">
         <label>

@@ -15,6 +15,15 @@ export default defineConfig({
           'user-agent': 'Mozilla/5.0',
         },
       },
+      '/consumer': {
+        target: 'https://consumer-api.wolt.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/consumer/, ''),
+        headers: {
+          accept: 'application/json',
+          'user-agent': 'Mozilla/5.0',
+        },
+      },
       '/nominatim': {
         target: 'https://nominatim.openstreetmap.org',
         changeOrigin: true,
