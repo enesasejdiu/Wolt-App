@@ -1,5 +1,8 @@
+/* Ensar Sallahu: Price formatting, delivery fees, and order-progress stages. */
+
 import type { Cart, CartLine, City, Quote } from './types'
 
+/* Ensar Sallahu: Formats an amount in cents as euros. */
 export function money(cents: number) {
   const sign = cents < 0 ? '-' : ''
   const abs = Math.abs(cents)
@@ -8,6 +11,7 @@ export function money(cents: number) {
   return `${sign}€${euros}.${rest}`
 }
 
+/* Ensar Sallahu: Calculates straight-line distance in kilometres. */
 export function kmBetween(lat1: number, lon1: number, lat2: number, lon2: number) {
   const toRad = (value: number) => (value * Math.PI) / 180
   const dLat = toRad(lat2 - lat1)
@@ -18,6 +22,7 @@ export function kmBetween(lat1: number, lon1: number, lat2: number, lon2: number
   return 6371 * 2 * Math.asin(Math.sqrt(a))
 }
 
+/* Ensar Sallahu: Returns the delivery fee for a distance. */
 export function deliveryFeeCents(km: number) {
   if (km < 1.2) return 90
   if (km < 2.2) return 150
@@ -26,11 +31,13 @@ export function deliveryFeeCents(km: number) {
   return 349
 }
 
+/* Ensar Sallahu: Calculates the total for one cart line. */
 export function lineTotal(line: CartLine) {
   const extras = line.options.reduce((sum, option) => sum + option.price, 0)
   return (line.basePrice + extras) * line.quantity
 }
 
+/* Ensar Sallahu: Builds the price quote. The delivery component is also shown on venue cards. */
 export function quoteCart(cart: Cart, city: City, tip = 0): Quote {
   const subtotal = cart.lines.reduce((sum, line) => sum + lineTotal(line), 0)
   const km = cart.venue
@@ -49,16 +56,19 @@ export function quoteCart(cart: Cart, city: City, tip = 0): Quote {
   }
 }
 
+/* Rumejsa Polaku: Formats the venue price range. */
 export function priceMarks(range: number) {
   if (!range) return ''
   return '€'.repeat(Math.min(4, range))
 }
 
+/* Rumejsa Polaku: Formats the delivery-time label. */
 export function estimateLabel(estimate: string) {
   if (!estimate) return ''
   return `${estimate.replace('-', '–')} min`
 }
 
+/* Stiljan Zeqiri: Describes the selection rule for an option group. */
 export function optionHint(min: number, max: number) {
   if (min > 0 && max > 0 && min === max) return `Choose ${min}`
   if (min > 0 && max > min) return `Choose ${min} to ${max}`
@@ -67,6 +77,7 @@ export function optionHint(min: number, max: number) {
   return 'Optional'
 }
 
+/* Ensar Sallahu: Resolves the current tracking stage. Timing is accelerated for the preview. */
 export function stageFor(placedAt: number, now = Date.now()) {
   const elapsed = now - placedAt
   const marks = [0, 4000, 11000, 19000, 28000]
@@ -85,6 +96,7 @@ export function stageFor(placedAt: number, now = Date.now()) {
   return { index, label: labels[index], progress, done: index === labels.length - 1 }
 }
 
+/* Ensar Sallahu: Calculates courier progress along the route. */
 export function routeProgress(stage: { index: number; progress: number }) {
   const start = 11000 / 28000
   if (stage.index < 2) return 0
@@ -92,20 +104,24 @@ export function routeProgress(stage: { index: number; progress: number }) {
   return Math.min(1, Math.max(0, (stage.progress - start) / (1 - start)))
 }
 
+/* Stiljan Zeqiri: Returns a display address, omitting plus codes. */
 export function prettyAddress(address: string) {
   const compact = address.replace(/\s/g, '')
   if (!address.trim() || /^[A-Z0-9]{4,}\+/.test(compact)) return ''
   return address.trim()
 }
 
+/* Ensar Sallahu: Formats route distance and duration. */
 export function roadLabel(meters: number, seconds: number) {
   const minutes = Math.max(1, Math.round(seconds / 60))
   const distance = meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`
   return `${distance} · ${minutes} min by road`
 }
 
+/* Ensar Sallahu: Sample courier names for the local order preview. */
 const COURIERS = ['Arben K.', 'Elira M.', 'Driton H.', 'Agnesa B.', 'Luan P.', 'Teuta S.']
 
+/* Ensar Sallahu: Selects a stable courier name from the order identifier. */
 export function pickCourier(seed: string) {
   const n = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0)
   return COURIERS[n % COURIERS.length]

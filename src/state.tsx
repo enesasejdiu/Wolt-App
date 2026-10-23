@@ -1,3 +1,11 @@
+/*
+ * Shared application state, persisted in the browser.
+ * Enesa Sejdiu: Selected city.
+ * Stiljan Zeqiri: Saved venues.
+ * Ensar Sallahu: Address, cart, and orders.
+ * Leonis Rama: Authenticated user.
+ */
+
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { CITIES } from './api'
 import { pickCourier, quoteCart } from './format'
@@ -29,6 +37,7 @@ const AppContext = createContext<AppValue | null>(null)
 
 const emptyCart: Cart = { venue: null, method: 'delivery', lines: [] }
 
+/* Leonis Rama: Reads a stored value, or returns the fallback if storage is unavailable. */
 function read<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key)
@@ -38,6 +47,7 @@ function read<T>(key: string, fallback: T): T {
   }
 }
 
+/* Leonis Rama: Provides city, user, cart, and orders to the application. */
 export function AppState({ children }: { children: ReactNode }) {
   const [city, setCityState] = useState<City>(() => read('wolt-city', CITIES[0]))
   const [user, setUser] = useState<User | null>(() => read('wolt-user', null))
@@ -46,6 +56,7 @@ export function AppState({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>(() => read('wolt-orders', []))
   const [favorites, setFavorites] = useState<string[]>(() => read('wolt-favorites', []))
 
+  /* Leonis Rama: Persists city, user, address, cart, orders, and saved venues. */
   useEffect(() => localStorage.setItem('wolt-city', JSON.stringify(city)), [city])
   useEffect(() => localStorage.setItem('wolt-user', JSON.stringify(user)), [user])
   useEffect(() => localStorage.setItem('wolt-address', JSON.stringify(address)), [address])
@@ -55,6 +66,7 @@ export function AppState({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppValue>(() => {
     return {
+      /* Enesa Sejdiu: Updates the selected city and resets a generic address when needed. */
       city,
       setCity: (next) => {
         setCityState(next)
@@ -62,12 +74,20 @@ export function AppState({ children }: { children: ReactNode }) {
           setAddressState(`City center, ${next.name}`)
         }
       },
+      /* Leonis Rama: Stores the authenticated user and applies the saved address. */
       user,
-      login: setUser,
+      login: (next) => {
+        setUser(next)
+        if (next.address?.trim()) setAddressState(next.address.trim())
+      },
+      /* Leonis Rama: Clears the authenticated user. */
       logout: () => setUser(null),
+      /* Ensar Sallahu: Delivery address used at checkout. */
       address,
       setAddress: setAddressState,
+      /* Ensar Sallahu: Cart. Accepts items from one venue at a time. */
       cart,
+      /* Stiljan Zeqiri: Adds an item from the item dialog. */
       addLine: (venue, line, replace = false, method) => {
         if (cart.venue && cart.venue.id !== venue.id && cart.lines.length && !replace) return 'conflict'
         setCart((current) => {
@@ -81,6 +101,7 @@ export function AppState({ children }: { children: ReactNode }) {
         })
         return 'ok'
       },
+      /* Ensar Sallahu: Updates quantity. A quantity of zero removes the line. */
       setQty: (key, quantity) => {
         setCart((current) => {
           const lines = current.lines
@@ -89,15 +110,21 @@ export function AppState({ children }: { children: ReactNode }) {
           return { ...current, lines, venue: lines.length ? current.venue : null }
         })
       },
+      /* Ensar Sallahu: Sets delivery or pickup for the current cart. */
       setMethod: (method) => setCart((current) => ({ ...current, method })),
+      /* Ensar Sallahu: Clears the cart. */
       clearCart: () => setCart(emptyCart),
+      /* Stiljan Zeqiri: Identifiers of saved venues. */
       favorites,
+      /* Stiljan Zeqiri: Toggles a saved venue from the venue page. */
       toggleFavorite: (id) => setFavorites((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id])),
+      /* Ensar Sallahu: Copies a previous order into the cart. */
       reorder: (order) => setCart({
         venue: order.venue,
         method: order.venue.online && order.method === 'delivery' ? 'delivery' : 'pickup',
         lines: order.lines.map((line) => ({ ...line, options: line.options.map((option) => ({ ...option })) })),
       }),
+      /* Ensar Sallahu: Stores the order locally. No external order is submitted. */
       orders,
       placeOrder: (draft) => {
         const id = `XK${Math.random().toString(36).slice(2, 7).toUpperCase()}`
@@ -118,6 +145,7 @@ export function AppState({ children }: { children: ReactNode }) {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }
 
+/* Leonis Rama: Hook for reading shared application state. */
 export function useApp() {
   const value = useContext(AppContext)
   if (!value) throw new Error('useApp must be used inside AppState')

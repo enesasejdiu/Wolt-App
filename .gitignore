@@ -1,5 +1,9 @@
+# Leonis Rama: Dependencies and build output are excluded from version control.
 node_modules
 dist
 .cache
 .DS_Store
 *.local
+
+# Leonis Rama: Local account records, including password hashes, remain on this machine.
+data/accounts.json
