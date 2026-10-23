@@ -1,5 +1,8 @@
+/* Ensar Sallahu: Geocoding and driving-route requests. */
+
 export type LatLon = { lat: number; lon: number }
 
+/* Ensar Sallahu: Driving route geometry, distance, and duration. */
 export type Road = {
   line: [number, number][]
   meters: number
@@ -8,6 +11,7 @@ export type Road = {
 
 const places = new Map<string, LatLon | null>()
 
+/* Ensar Sallahu: Resolves an address to coordinates. */
 export async function geocode(query: string): Promise<LatLon | null> {
   const key = query.trim().toLowerCase()
   if (!key) return null
@@ -21,6 +25,7 @@ export async function geocode(query: string): Promise<LatLon | null> {
   return point
 }
 
+/* Ensar Sallahu: Requests the driving route between two coordinates. */
 export async function drivingRoute(from: LatLon, to: LatLon): Promise<Road | null> {
   const url = `/osrm/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson`
   const response = await fetch(url)

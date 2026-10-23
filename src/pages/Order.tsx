@@ -1,3 +1,5 @@
+/* Ensar Sallahu: Order tracking, order history, and saved venues. */
+
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { peekVenue } from '../api'
@@ -8,6 +10,7 @@ import { useApp } from '../state'
 
 const STEPS = ['Order received', 'Preparing', 'Picked up', 'Nearby', 'Delivered']
 
+/* Ensar Sallahu: Tracking view. Status timing is simulated; the route is retrieved from the routing service. */
 export function Tracking() {
   const { id = '' } = useParams()
   const { orders } = useApp()
@@ -89,6 +92,7 @@ export function Tracking() {
   )
 }
 
+/* Ensar Sallahu: Restores a previous order into the cart. */
 function OrderAgain({ orderId }: { orderId: string }) {
   const { orders, reorder } = useApp()
   const navigate = useNavigate()
@@ -108,6 +112,7 @@ function OrderAgain({ orderId }: { orderId: string }) {
   )
 }
 
+/* Ensar Sallahu: Order history stored in the browser. */
 export function Orders() {
   const { orders } = useApp()
   useEffect(() => { document.title = 'Your orders | Wolt' }, [])
@@ -136,6 +141,7 @@ export function Orders() {
   )
 }
 
+/* Ensar Sallahu: Saved venues. Identifiers are stored by the venue-page save action. */
 export function Saved() {
   const { favorites } = useApp()
   const places = favorites.map((id) => peekVenue(id)).filter((venue) => venue !== null)
