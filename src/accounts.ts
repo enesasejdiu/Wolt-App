@@ -10,8 +10,13 @@ type AccountInput = {
   password: string
 }
 
+type SignInInput = {
+  email: string
+  password: string
+}
+
 /* Leonis Rama: Posts account credentials to the local accounts endpoint. */
-async function post(path: string, body: AccountInput): Promise<User> {
+async function post(path: string, body: AccountInput | SignInInput): Promise<User> {
   const response = await fetch(path, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -27,7 +32,7 @@ export function signUp(input: AccountInput) {
   return post('/api/signup', input)
 }
 
-/* Leonis Rama: Authenticates against a stored account. */
-export function signIn(input: AccountInput) {
+/* Leonis Rama: Authenticates with email and password. Profile fields are not required. */
+export function signIn(input: SignInInput) {
   return post('/api/signin', input)
 }

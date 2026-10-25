@@ -193,8 +193,10 @@ export function LoginPage() {
     setError('')
     setBusy(true)
     try {
-      const details = { name: name.trim(), address: address.trim(), phone: phone.trim(), email: email.trim(), password }
-      const user = mode === 'signup' ? await signUp(details) : await signIn(details)
+      const emailValue = email.trim()
+      const user = mode === 'signup'
+        ? await signUp({ name: name.trim(), address: address.trim(), phone: phone.trim(), email: emailValue, password })
+        : await signIn({ email: emailValue, password })
       login(user)
       navigate('/')
     } catch (err) {
@@ -210,16 +212,20 @@ export function LoginPage() {
       <p className="lede">
         {mode === 'signup'
           ? 'Your full name, address, phone, email, and password are saved in a local accounts file on this computer.'
-          : 'Enter the full name, address, and phone number for this account, then the email and password.'}
+          : 'Enter the email and password for your account.'}
       </p>
       <div className="choice">
         <button type="button" className={mode === 'login' ? 'chip on' : 'chip'} onClick={() => { setMode('login'); setError('') }}>Log in</button>
         <button type="button" className={mode === 'signup' ? 'chip on' : 'chip'} onClick={() => { setMode('signup'); setError('') }}>Sign up</button>
       </div>
       <form className="stack" onSubmit={submit}>
-        <label>Full name<input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required /></label>
-        <label>Address<input value={address} onChange={(event) => setAddress(event.target.value)} autoComplete="street-address" placeholder="Street and number" required /></label>
-        <label>Phone number<input value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" required /></label>
+        {mode === 'signup' && (
+          <>
+            <label>Full name<input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required /></label>
+            <label>Address<input value={address} onChange={(event) => setAddress(event.target.value)} autoComplete="street-address" placeholder="Street and number" required /></label>
+            <label>Phone number<input value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" required /></label>
+          </>
+        )}
         <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" required /></label>
         <label>Password
           <input

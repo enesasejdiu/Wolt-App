@@ -125,16 +125,15 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
   const password = typeof body.password === 'string' ? body.password : ''
   const accounts = load()
 
-  const name = text(body.name)
-  const phone = text(body.phone)
-  const address = text(body.address)
-  const detailsError = profileError(name, address, phone)
-  if (detailsError) {
-    send(res, 400, { error: detailsError })
-    return true
-  }
-
   if (path === '/api/signup') {
+    const name = text(body.name)
+    const phone = text(body.phone)
+    const address = text(body.address)
+    const detailsError = profileError(name, address, phone)
+    if (detailsError) {
+      send(res, 400, { error: detailsError })
+      return true
+    }
     if (!validEmail(email)) return send(res, 400, { error: 'Add a valid email.' }), true
     if (password.length < 6) return send(res, 400, { error: 'Use a password of at least 6 characters.' }), true
     if (accounts.some((account) => account.email === email)) {
@@ -167,10 +166,6 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     send(res, 401, { error: 'Email or password is wrong.' })
     return true
   }
-  account.name = name
-  account.phone = phone
-  account.address = address
-  save(accounts)
   send(res, 200, { user: publicAccount(account) })
   return true
 }
