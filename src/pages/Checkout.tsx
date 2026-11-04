@@ -173,32 +173,78 @@ export function Checkout() {
   )
 }
 
-/* Leonis Rama: Registration and login against the local account store. */
+/* Leonis Rama: Login page. It asks only for the email and password of an existing account. */
 export function LoginPage() {
   const { login } = useApp()
   const navigate = useNavigate()
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
-  const [name, setName] = useState('')
-  const [address, setAddress] = useState('')
   const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('+383 ')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => { document.title = mode === 'signup' ? 'Sign up | Wolt' : 'Log in | Wolt' }, [mode])
+  useEffect(() => { document.title = 'Log in | Wolt' }, [])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
     setError('')
     setBusy(true)
     try {
-      const details = { name: name.trim(), address: address.trim(), phone: phone.trim(), email: email.trim(), password }
-      const user = mode === 'signup' ? await signUp(details) : await signIn(details)
-      login(user)
+      login(await signIn({ email: email.trim(), password }))
       navigate('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save the account.')
+      setError(err instanceof Error ? err.message : 'Could not log in.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="page auth-login">
+      <h1>Welcome back</h1>
+      <p className="lede">Log in with your email and password.</p>
+      <form className="stack" onSubmit={submit}>
+        <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" required /></label>
+        <label>Password
+          <input
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            type="password"
+            autoComplete="current-password"
+            required
+          />
+        </label>
+        {error && <p className="form-error">{error}</p>}
+        <button className="btn btn-blue" type="submit" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
+        <p className="auth-switch">New to Wolt? <Link to="/register" className="text-link">Create an account</Link></p>
+        <Link to="/" className="text-link">Continue without an account</Link>
+      </form>
+    </div>
+  )
+}
+
+/* Leonis Rama: Registration page. It collects the profile and the credentials for a new account. */
+export function RegisterPage() {
+  const { login } = useApp()
+  const navigate = useNavigate()
+  const [name, setName] = useState('')
+  const [address, setAddress] = useState('')
+  const [phone, setPhone] = useState('+383 ')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => { document.title = 'Create account | Wolt' }, [])
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    setError('')
+    setBusy(true)
+    try {
+      login(await signUp({ name: name.trim(), address: address.trim(), phone: phone.trim(), email: email.trim(), password }))
+      navigate('/')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create the account.')
     } finally {
       setBusy(false)
     }
@@ -206,36 +252,28 @@ export function LoginPage() {
 
   return (
     <div className="page narrow">
-      <h1>{mode === 'signup' ? 'Create account' : 'Log in'}</h1>
-      <p className="lede">
-        {mode === 'signup'
-          ? 'Your full name, address, phone, email, and password are saved in a local accounts file on this computer.'
-          : 'Enter the full name, address, and phone number for this account, then the email and password.'}
-      </p>
-      <div className="choice">
-        <button type="button" className={mode === 'login' ? 'chip on' : 'chip'} onClick={() => { setMode('login'); setError('') }}>Log in</button>
-        <button type="button" className={mode === 'signup' ? 'chip on' : 'chip'} onClick={() => { setMode('signup'); setError('') }}>Sign up</button>
-      </div>
+      <h1>Create account</h1>
+      <p className="lede">Your details are saved in a local accounts file on this computer.</p>
       <form className="stack" onSubmit={submit}>
+        <h2>Your details</h2>
         <label>Full name<input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required /></label>
         <label>Address<input value={address} onChange={(event) => setAddress(event.target.value)} autoComplete="street-address" placeholder="Street and number" required /></label>
         <label>Phone number<input value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" required /></label>
+        <h2>Account</h2>
         <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" required /></label>
         <label>Password
           <input
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             type="password"
-            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+            autoComplete="new-password"
             minLength={6}
             required
           />
         </label>
         {error && <p className="form-error">{error}</p>}
-        <button className="btn btn-blue" type="submit" disabled={busy}>
-          {busy ? 'Saving…' : mode === 'signup' ? 'Create account' : 'Log in'}
-        </button>
-        <Link to="/" className="text-link">Continue without an account</Link>
+        <button className="btn btn-blue" type="submit" disabled={busy}>{busy ? 'Creating account…' : 'Create account'}</button>
+        <p className="auth-switch">Already have an account? <Link to="/login" className="text-link">Log in</Link></p>
       </form>
     </div>
   )

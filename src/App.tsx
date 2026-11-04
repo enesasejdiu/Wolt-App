@@ -5,7 +5,7 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import { CartSheet, Header, MobileDock, TabBar } from './components'
 import { Categories, Discovery } from './pages/Discovery'
 import { ListPage, SearchPage, VenueIndex } from './pages/Browse'
-import { Checkout, LoginPage } from './pages/Checkout'
+import { Checkout, LoginPage, RegisterPage } from './pages/Checkout'
 import { Orders, Saved, Tracking } from './pages/Order'
 import { VenuePage } from './pages/Venue'
 
@@ -39,6 +39,7 @@ export function App() {
           <Route path="/saved" element={<Saved />} />
           {/* Leonis Rama: Authentication. */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Routes>
         </div>
       </main>
