@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { fetchList, fetchRestaurants, fetchRetail } from '../api'
-import { ErrorNote, Loading, VenueCard, placesMatching } from '../components'
+import { Loading, VenueCard, placesMatching } from '../components'
 import { useApp } from '../state'
 import type { Banner, Venue } from '../types'
 
@@ -31,7 +31,6 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
   const [venues, setVenues] = useState<Venue[] | null>(null)
   const [categories, setCategories] = useState<Banner[]>([])
   const [title, setTitle] = useState(kind === 'restaurants' ? 'Restaurants' : 'Stores')
-  const [error, setError] = useState('')
   const [sort, setSort] = useState('recommended')
   const [price, setPrice] = useState(0)
   const [openOnly, setOpenOnly] = useState(false)
@@ -41,7 +40,6 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
     let cancel = false
     setVenues(null)
     setCategories([])
-    setError('')
     setShown(48)
     const load = kind === 'restaurants' ? fetchRestaurants(city) : fetchRetail(city)
     load
@@ -51,7 +49,7 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
         setCategories(kind === 'retail' ? page.sections.flatMap((section) => section.banners).filter((banner) => banner.title) : [])
         setVenues(venuesOf(page.sections))
       })
-      .catch((err: Error) => { if (!cancel) setError(err.message) })
+      .catch(() => { if (!cancel) setVenues([]) })
     return () => { cancel = true }
   }, [city, kind])
 
@@ -85,7 +83,6 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
     return list
   }, [venues, openOnly, price, tag, sort, city])
 
-  if (error) return <ErrorNote message={error} />
   if (!venues) return <Loading label={kind === 'restaurants' ? 'Finding restaurants' : 'Finding stores'} />
 
   return (
@@ -148,19 +145,17 @@ export function ListPage() {
   const { city } = useApp()
   const [venues, setVenues] = useState<Venue[] | null>(null)
   const [title, setTitle] = useState('Places')
-  const [error, setError] = useState('')
 
   useEffect(() => {
     let cancel = false
     setVenues(null)
-    setError('')
     fetchList(city, slug)
       .then((page) => {
         if (cancel) return
         setTitle(page.title || 'Places')
         setVenues(venuesOf(page.sections))
       })
-      .catch((err: Error) => { if (!cancel) setError(err.message) })
+      .catch(() => { if (!cancel) setVenues([]) })
     return () => { cancel = true }
   }, [city, slug])
 
@@ -168,7 +163,6 @@ export function ListPage() {
     document.title = `${title} | Wolt`
   }, [title])
 
-  if (error) return <ErrorNote message={error} />
   if (!venues) return <Loading />
   return (
     <div className="page">
@@ -188,7 +182,6 @@ export function SearchPage() {
   const q = params.get('q') || ''
   const { city } = useApp()
   const [venues, setVenues] = useState<Venue[] | null>(null)
-  const [error, setError] = useState('')
 
   useEffect(() => {
     document.title = q ? `${q} | Wolt` : 'Search | Wolt'
@@ -197,7 +190,7 @@ export function SearchPage() {
       .then(([restaurants, retail]) => {
         if (!cancel) setVenues(venuesOf([...restaurants.sections, ...retail.sections]))
       })
-      .catch((err: Error) => { if (!cancel) setError(err.message) })
+      .catch(() => { if (!cancel) setVenues([]) })
     return () => { cancel = true }
   }, [city])
 
@@ -206,7 +199,6 @@ export function SearchPage() {
   return (
     <div className="page">
       <h1>{q.trim() ? `“${q.trim()}”` : 'Search'}</h1>
-      {error && <ErrorNote message={error} />}
       {!q.trim() && <p className="lede">Search for a place, a cuisine, or something like pizza, pharmacy, or burger.</p>}
       {q.trim() && !venues && <Loading label="Searching" />}
       {q.trim() && venues && (

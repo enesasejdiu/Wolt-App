@@ -31,7 +31,6 @@ export function Checkout() {
   const [expiry, setExpiry] = useState('')
   const [cvc, setCvc] = useState('')
   const [tip, setTip] = useState(0)
-  const [error, setError] = useState('')
   const [dropoffPoint, setDropoffPoint] = useState<LatLon | null>(null)
   const [road, setRoad] = useState('')
 
@@ -45,26 +44,31 @@ export function Checkout() {
   function place(event: FormEvent) {
     event.preventDefault()
     if (!cart.venue) return
-    if (name.trim().length < 2) return setError('Add the name for the order.')
-    if (phone.replace(/\D/g, '').length < 8) return setError('Add a phone number so the courier can reach you.')
-    if (cart.method === 'delivery' && address.trim().length < 4) return setError('Add a delivery address.')
+    const contactName = name.trim()
+    const contactPhone = phone.trim()
+    const phoneDigits = contactPhone.replace(/\D/g, '')
     let last4: string | undefined
+    let paymentMethod = payment
     if (payment === 'card') {
       const digits = card.replace(/\D/g, '')
-      if (digits.length < 16) return setError('Enter a 16-digit card number. Nothing is charged.')
-      if (!/^\d{2}\/\d{2}$/.test(expiry)) return setError('Enter the expiry as MM/YY.')
-      if (cvc.replace(/\D/g, '').length < 3) return setError('Enter the CVC.')
-      last4 = digits.slice(-4)
+      const cardComplete = digits.length >= 16 && /^\d{2}\/\d{2}$/.test(expiry) && cvc.replace(/\D/g, '').length >= 3
+      if (cardComplete) last4 = digits.slice(-4)
+      else paymentMethod = 'cash'
     }
-    const contact = { name: name.trim(), phone: phone.trim(), email: email.trim() }
+    const contact = {
+      name: contactName.length >= 2 ? contactName : 'Guest',
+      phone: phoneDigits.length >= 8 ? contactPhone : '',
+      email: email.trim(),
+    }
+    const deliveryAddress = address.trim().length >= 4 ? address.trim() : `City center, ${city.name}`
     placing.current = true
     const order = placeOrder({
       cityName: city.name,
-      address: cart.method === 'pickup' ? cart.venue.address || cart.venue.name : address.trim(),
+      address: cart.method === 'pickup' ? cart.venue.address || cart.venue.name : deliveryAddress,
       details: details.trim(),
       dropoff,
       method: cart.method,
-      payment,
+      payment: paymentMethod,
       cardLast4: last4,
       note: note.trim(),
       dropoffLocation: dropoffPoint ?? undefined,
@@ -123,6 +127,7 @@ export function Checkout() {
           </section>
           <section>
             <h2>Contact</h2>
+            {!user && <p className="fine">No account is needed. You can place this preview order without filling these in.</p>}
             <label>Name<input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" /></label>
             <label>Phone<input value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" /></label>
             <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="Optional" /></label>
@@ -158,7 +163,6 @@ export function Checkout() {
               ))}
             </div>
           </section>
-          {error && <p className="form-error">{error}</p>}
           <button className="btn btn-blue place" type="submit">Place order · {money(quote.total)}</button>
         </div>
         <aside className="cart-side">
