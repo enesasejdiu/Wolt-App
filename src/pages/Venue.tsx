@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { fetchMenu, fetchStoreCatalog, fetchStoreShelf, findVenue, searchStore } from '../api'
-import { CartBody, ErrorNote, ItemDialog, Loading, MethodSwitch, SearchField } from '../components'
+import { CartBody, ItemDialog, Loading, MethodSwitch, SearchField } from '../components'
 import { estimateLabel, money, prettyAddress, priceMarks } from '../format'
 import { LiveMap } from '../LiveMap'
 import { useApp } from '../state'
@@ -19,7 +19,6 @@ export function VenuePage() {
   const [aisleId, setAisleId] = useState('')
   const [shelves, setShelves] = useState<{ id: string; name: string; slug: string; items: MenuItem[]; next: string | null }[] | null>(null)
   const [hits, setHits] = useState<MenuItem[] | null>(null)
-  const [error, setError] = useState('')
   const [active, setActive] = useState<MenuItem | null>(null)
   const [query, setQuery] = useState('')
   const [preview, setPreview] = useState<'delivery' | 'pickup'>('delivery')
@@ -34,7 +33,6 @@ export function VenuePage() {
     setShelves(null)
     setHits(null)
     setQuery('')
-    setError('')
     findVenue(city, id)
       .then(async (next) => {
         if (cancel) return
@@ -48,7 +46,12 @@ export function VenuePage() {
         const loaded = await fetchMenu(next.id)
         if (!cancel) setMenu(loaded)
       })
-      .catch((err: Error) => { if (!cancel) setError(err.message) })
+      .catch(() => {
+        if (cancel) return
+        setVenue((current) => current === undefined ? null : current)
+        setMenu((current) => current ?? { name: '', categories: [], items: [] })
+        setAisles((current) => current ?? [])
+      })
     return () => { cancel = true }
   }, [city, id])
 
@@ -64,7 +67,7 @@ export function VenuePage() {
       return { id: leaf.id, name: leaf.name, slug: leaf.slug, items: page.items, next: page.nextPage }
     }))
       .then((rows) => { if (!cancel) setShelves(rows.filter((row) => row.items.length)) })
-      .catch((err: Error) => { if (!cancel) setError(err.message) })
+      .catch(() => { if (!cancel) setShelves([]) })
     return () => { cancel = true }
   }, [store, venue, aisle, query])
 
@@ -77,7 +80,7 @@ export function VenuePage() {
     const timer = window.setTimeout(() => {
       searchStore(venue.slug, query.trim())
         .then((items) => { if (!cancel) setHits(items) })
-        .catch((err: Error) => { if (!cancel) setError(err.message) })
+        .catch(() => { if (!cancel) setHits([]) })
     }, 280)
     return () => {
       cancel = true
@@ -104,7 +107,6 @@ export function VenuePage() {
       .filter((category) => category.items.length)
   }, [menu, query])
 
-  if (error) return <ErrorNote message={error} />
   if (venue === undefined || (venue && (store ? !aisles : !menu))) {
     const label = !venue ? 'Opening' : store ? 'Opening the store' : 'Opening the menu'
     return <Loading label={label} />

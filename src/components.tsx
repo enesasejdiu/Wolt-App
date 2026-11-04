@@ -776,7 +776,3 @@ export function Loading({ label = 'Loading places near you' }: { label?: string 
   )
 }
 
-/* Enesa Sejdiu: Error state for a failed page request. */
-export function ErrorNote({ message }: { message: string }) {
-  return <div className="error-note">{message}</div>
-}

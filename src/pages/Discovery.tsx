@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchFront } from '../api'
-import { ErrorNote, HScroll, Loading, SectionTitle, VenueCard } from '../components'
+import { HScroll, Loading, SectionTitle, VenueCard } from '../components'
 import { useApp } from '../state'
 import type { DiscoveryPage } from '../types'
 
@@ -18,15 +18,13 @@ function seeAllPath(seeAll: string | null) {
 export function Discovery() {
   const { city } = useApp()
   const [page, setPage] = useState<DiscoveryPage | null>(null)
-  const [error, setError] = useState('')
 
   useEffect(() => {
     let cancel = false
     setPage(null)
-    setError('')
     fetchFront(city)
       .then((next) => { if (!cancel) setPage(next) })
-      .catch((err: Error) => { if (!cancel) setError(err.message) })
+      .catch(() => { if (!cancel) setPage({ title: '', sections: [] }) })
     return () => { cancel = true }
   }, [city])
 
@@ -34,7 +32,6 @@ export function Discovery() {
     document.title = `Wolt | ${city.name}`
   }, [city.name])
 
-  if (error) return <ErrorNote message={error} />
   if (!page) return <Loading />
 
   return (
@@ -94,12 +91,10 @@ export function Discovery() {
 export function Categories() {
   const { city } = useApp()
   const [page, setPage] = useState<DiscoveryPage | null>(null)
-  const [error, setError] = useState('')
   useEffect(() => {
     document.title = `Categories | Wolt`
-    fetchFront(city).then(setPage).catch((err: Error) => setError(err.message))
+    fetchFront(city).then(setPage).catch(() => setPage({ title: '', sections: [] }))
   }, [city])
-  if (error) return <ErrorNote message={error} />
   if (!page) return <Loading label="Loading categories" />
   const section = page.sections.find((item) => item.id === 'category-list')
   return (

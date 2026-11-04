@@ -812,8 +812,8 @@ legend em { margin-left: auto; font-style: normal; color: var(--blue); font-size
 .order-row span { display: flex; flex-direction: column; }
 .order-row small { color: var(--muted); }
 
-/* Enesa Sejdiu: Loading and error states. */
-.loading, .error-note {
+/* Enesa Sejdiu: Loading state. */
+.loading {
   max-width: var(--max);
   margin: 48px auto;
   padding: 0 var(--margin);
@@ -830,7 +830,6 @@ legend em { margin-left: auto; font-style: normal; color: var(--blue); font-size
   animation: spin .7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.error-note { color: #c62828; }
 
 /* Enesa Sejdiu: Mobile tab bar. Ensar Sallahu: Mobile order bar. Both are shown on small screens. */
 .tabbar, .dock { display: none; }

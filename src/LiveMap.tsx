@@ -129,10 +129,10 @@ export function LiveMap({ origin, destination, destinationQuery, progress = 0, s
           if (cancel) return
           setResolved(point ? { ...point, label: 'You' } : null)
           notifyDestination.current?.(point)
-          if (!point) setStatus('Address not found on the map')
+          if (!point) setStatus('')
         })
         .catch(() => {
-          if (!cancel) setStatus('Could not look up that address')
+          if (!cancel) setStatus('')
         })
     }, 400)
     return () => {
