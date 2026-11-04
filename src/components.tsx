@@ -426,6 +426,8 @@ export function Header({ onCart }: { onCart: () => void }) {
               <div className="popover right">
                 <p className="popover-label">{user.name}</p>
                 {user.email && <p className="fine account-email">{user.email}</p>}
+                {/* Stiljan Zeqiri: Profile page link. */}
+                <Link to="/profile" onClick={() => setOpen(null)}>Profile</Link>
                 <Link to="/orders" onClick={() => setOpen(null)}>Your orders</Link>
                 <Link to="/saved" onClick={() => setOpen(null)}>Saved places</Link>
                 <button onClick={() => { logout(); setOpen(null) }}>Log out</button>
