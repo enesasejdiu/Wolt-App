@@ -7,6 +7,7 @@ import { Categories, Discovery } from './pages/Discovery'
 import { ListPage, SearchPage, VenueIndex } from './pages/Browse'
 import { Checkout, LoginPage, RegisterPage } from './pages/Checkout'
 import { Orders, Saved, Tracking } from './pages/Order'
+import { Profile } from './pages/Profile'
 import { VenuePage } from './pages/Venue'
 
 export function App() {
@@ -40,6 +41,8 @@ export function App() {
           {/* Leonis Rama: Authentication. */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          {/* Stiljan Zeqiri: Profile and account settings. */}
+          <Route path="/profile" element={<Profile />} />
         </Routes>
         </div>
       </main>

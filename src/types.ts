@@ -166,6 +166,7 @@ export type User = {
   email: string
   phone: string
   address?: string
+  createdAt?: string
 }
 
 /* Ensar Sallahu: Completed order stored in the browser. */
