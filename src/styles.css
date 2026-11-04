@@ -262,6 +262,7 @@ main { min-height: calc(100vh - var(--header)); }
   padding: var(--margin);
 }
 .page.narrow { max-width: 640px; }
+.page.auth-login { max-width: 420px; text-align: center; }
 h1 { font-size: 32px; letter-spacing: -0.6px; margin-bottom: 6px; }
 .lede { color: var(--muted); margin: 6px 0 16px; }
 .muted { color: var(--muted); }
@@ -708,13 +709,15 @@ legend em { margin-left: auto; font-style: normal; color: var(--blue); font-size
   padding: var(--margin);
   background: #fff;
 }
-.checkout-form h2 { font-size: 20px; }
+.checkout-form h2, .stack h2 { font-size: 20px; }
 .checkout label, .stack label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 14px; }
 .checkout input, .stack input { width: 100%; }
 .choice { display: flex; flex-wrap: wrap; gap: 8px; }
 .card-grid { display: grid; grid-template-columns: 1.4fr .8fr .6fr; gap: 8px; }
 .form-error { color: #c62828; font-weight: 700; }
 .text-link { color: var(--blue); font-weight: 700; text-align: center; }
+.auth-switch { margin: 0; text-align: center; color: var(--muted); }
+.auth-login .stack label { text-align: left; }
 
 /* Ensar Sallahu: Tracking layout, map, courier, and order history. */
 .tracking-screen {
