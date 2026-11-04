@@ -1,9 +1,12 @@
+/* Ensar Sallahu: Map used on the venue, checkout, and tracking views. */
+
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { drivingRoute, geocode, type LatLon } from './geo'
 import { roadLabel } from './format'
 
+/* Ensar Sallahu: Labeled map coordinate. */
 export type MapPlace = LatLon & { label: string }
 
 type Props = {
@@ -18,6 +21,7 @@ type Props = {
 
 const SCOOTER = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="6.5" cy="17" r="2" fill="none" stroke="#202125" stroke-width="1.8"/><circle cx="17.5" cy="17" r="2" fill="none" stroke="#202125" stroke-width="1.8"/><path d="M6.5 17h5.2l1.6-5.2h3.4l1.8 3.6M9 11.8h4.2" fill="none" stroke="#202125" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 
+/* Ensar Sallahu: Marker for a venue or customer location. */
 function pin(color: string) {
   return L.divIcon({
     className: 'map-pin',
@@ -27,6 +31,7 @@ function pin(color: string) {
   })
 }
 
+/* Ensar Sallahu: Courier marker. Shows a completed state when delivery is finished. */
 function rider(done: boolean) {
   return L.divIcon({
     className: 'map-courier',
@@ -36,6 +41,7 @@ function rider(done: boolean) {
   })
 }
 
+/* Ensar Sallahu: Interpolates a point along the route. */
 function along(points: L.LatLng[], t: number) {
   if (!points.length) return null
   if (points.length === 1 || t <= 0) return points[0]
@@ -60,6 +66,7 @@ function along(points: L.LatLng[], t: number) {
   return points[points.length - 1]
 }
 
+/* Ensar Sallahu: Renders the route. Also used on the venue page. */
 export function LiveMap({ origin, destination, destinationQuery, progress = 0, showCourier = false, onDestination, onRoad }: Props) {
   const node = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -94,8 +101,8 @@ export function LiveMap({ origin, destination, destinationQuery, progress = 0, s
       courier.current = null
       layers.current = null
     }
-    // The map instance is created once for this container.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Ensar Sallahu: The map instance is created once for this container.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Ensar Sallahu: Map setup runs once.
   }, [])
 
   const destLat = destination?.lat

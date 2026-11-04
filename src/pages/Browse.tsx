@@ -1,3 +1,9 @@
+/*
+ * Listing and search views.
+ * Rumejsa Polaku: Restaurant, store, and collection listings.
+ * Enesa Sejdiu: Search results.
+ */
+
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { fetchList, fetchRestaurants, fetchRetail } from '../api'
@@ -5,6 +11,7 @@ import { ErrorNote, Loading, VenueCard, placesMatching } from '../components'
 import { useApp } from '../state'
 import type { Banner, Venue } from '../types'
 
+/* Rumejsa Polaku: Flattens page sections into a unique venue list. */
 function venuesOf(sections: { venues: Venue[] }[]) {
   const seen = new Set<string>()
   const list: Venue[] = []
@@ -18,6 +25,7 @@ function venuesOf(sections: { venues: Venue[] }[]) {
   return list
 }
 
+/* Rumejsa Polaku: Filterable restaurant or store index. */
 export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
   const { city } = useApp()
   const [venues, setVenues] = useState<Venue[] | null>(null)
@@ -134,6 +142,7 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
   )
 }
 
+/* Rumejsa Polaku: Single venue collection. */
 export function ListPage() {
   const { slug = '' } = useParams()
   const { city } = useApp()
@@ -173,6 +182,7 @@ export function ListPage() {
   )
 }
 
+/* Enesa Sejdiu: Search results for the header query. */
 export function SearchPage() {
   const [params] = useSearchParams()
   const q = params.get('q') || ''

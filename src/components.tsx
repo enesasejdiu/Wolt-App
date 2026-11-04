@@ -1,3 +1,11 @@
+/*
+ * Shared UI components.
+ * Enesa Sejdiu: Header, search, navigation, and page status.
+ * Rumejsa Polaku: Venue cards.
+ * Stiljan Zeqiri: Item dialog and fulfillment method.
+ * Ensar Sallahu: Cart sheet and mobile order bar.
+ */
+
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { CITIES, fetchRestaurants, fetchRetail } from './api'
@@ -5,6 +13,7 @@ import { estimateLabel, lineTotal, money, optionHint, priceMarks, quoteCart } fr
 import { useApp } from './state'
 import type { CartLine, CartVenue, City, MenuItem, SelectedOption, Venue } from './types'
 
+/* Enesa Sejdiu: Logo linking to the homepage. */
 export function Logo() {
   return (
     <Link to="/" className="logo" aria-label="Wolt home">
@@ -13,6 +22,7 @@ export function Logo() {
   )
 }
 
+/* Enesa Sejdiu: Header icon set. */
 function IconSearch() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -22,6 +32,7 @@ function IconSearch() {
   )
 }
 
+/* Enesa Sejdiu: Location icon for the city selector. */
 function IconPin() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -31,6 +42,7 @@ function IconPin() {
   )
 }
 
+/* Enesa Sejdiu: Cart icon. Opens the order sheet. */
 function IconBag() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -40,9 +52,11 @@ function IconBag() {
   )
 }
 
+/* Enesa Sejdiu: Default search suggestions. */
 const QUICK_SEARCHES = ['Pizza', 'Burger', 'Coffee', 'Sushi', 'Pharmacy', 'Groceries']
 const RECENT_KEY = 'wolt-recent'
 
+/* Enesa Sejdiu: Reads recent searches from local storage. */
 function readRecent() {
   try {
     const list = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]') as string[]
@@ -52,6 +66,7 @@ function readRecent() {
   }
 }
 
+/* Enesa Sejdiu: Stores the latest query at the front of the recent-search list. */
 function rememberSearch(query: string) {
   const trimmed = query.trim()
   if (!trimmed) return
@@ -61,6 +76,7 @@ function rememberSearch(query: string) {
 
 const catalogs = new Map<string, Promise<Venue[]>>()
 
+/* Enesa Sejdiu: Loads the city catalog once for search suggestions. */
 function loadCatalog(city: City) {
   const cached = catalogs.get(city.slug)
   if (cached) return cached
@@ -85,6 +101,7 @@ function loadCatalog(city: City) {
   return pending
 }
 
+/* Enesa Sejdiu: Ranks venues that match the search terms. */
 export function placesMatching(venues: Venue[], query: string) {
   const parts = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
   if (!parts.length) return []
@@ -101,6 +118,7 @@ export function placesMatching(venues: Venue[], query: string) {
     .map((item) => item.venue)
 }
 
+/* Enesa Sejdiu: Highlights the matched portion of a suggestion. */
 function Mark({ text, query }: { text: string; query: string }) {
   const needle = query.trim()
   const at = needle ? text.toLowerCase().indexOf(needle.toLowerCase()) : -1
@@ -114,6 +132,7 @@ function Mark({ text, query }: { text: string; query: string }) {
   )
 }
 
+/* Enesa Sejdiu: Search field used in the header and on the venue page. */
 export function SearchField({
   value,
   onChange,
@@ -197,6 +216,7 @@ type Suggestion =
   | { id: string; type: 'venue'; venue: Venue }
   | { id: string; type: 'all'; label: string }
 
+/* Enesa Sejdiu: Application header. */
 export function Header({ onCart }: { onCart: () => void }) {
   const { city, setCity, user, logout, cart } = useApp()
   const navigate = useNavigate()
@@ -405,6 +425,7 @@ export function Header({ onCart }: { onCart: () => void }) {
             {open === 'user' && (
               <div className="popover right">
                 <p className="popover-label">{user.name}</p>
+                {user.email && <p className="fine account-email">{user.email}</p>}
                 <Link to="/orders" onClick={() => setOpen(null)}>Your orders</Link>
                 <Link to="/saved" onClick={() => setOpen(null)}>Saved places</Link>
                 <button onClick={() => { logout(); setOpen(null) }}>Log out</button>
@@ -423,6 +444,7 @@ export function Header({ onCart }: { onCart: () => void }) {
   )
 }
 
+/* Enesa Sejdiu: Mobile tab navigation. */
 export function TabBar() {
   return (
     <nav className="tabbar">
@@ -435,6 +457,7 @@ export function TabBar() {
   )
 }
 
+/* Rumejsa Polaku: Venue card with image, rating, delivery time, and delivery fee. */
 export function VenueCard({ venue }: { venue: Venue }) {
   const { city } = useApp()
   const fee = quoteCart(
@@ -466,6 +489,7 @@ export function VenueCard({ venue }: { venue: Venue }) {
   )
 }
 
+/* Enesa Sejdiu: Horizontal scroller for homepage sections. */
 export function HScroll({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
   const scroll = (dir: number) => ref.current?.scrollBy({ left: dir * Math.min(640, ref.current.clientWidth * 0.8), behavior: 'smooth' })
@@ -478,6 +502,7 @@ export function HScroll({ children }: { children: ReactNode }) {
   )
 }
 
+/* Enesa Sejdiu: Section heading and optional "See all" link. */
 export function SectionTitle({ title, to }: { title: string; to?: string }) {
   if (!title) return null
   return (
@@ -488,11 +513,13 @@ export function SectionTitle({ title, to }: { title: string; to?: string }) {
   )
 }
 
+/* Stiljan Zeqiri: Builds a cart-line key from the item, selected options, and note. */
 function selectionKey(itemId: string, options: SelectedOption[], note: string) {
   const opts = [...options].map((option) => option.id).sort().join(',')
   return `${itemId}:${opts}:${note.trim()}`
 }
 
+/* Stiljan Zeqiri: Delivery and pickup selector. */
 export function MethodSwitch({
   method,
   canDeliver,
@@ -517,6 +544,7 @@ export function MethodSwitch({
   )
 }
 
+/* Stiljan Zeqiri: Item dialog for options, note, quantity, and add-to-order. */
 export function ItemDialog({
   item,
   venue,
@@ -649,6 +677,7 @@ export function ItemDialog({
   )
 }
 
+/* Ensar Sallahu: Cart lines, quantities, fees, and total. */
 export function CartBody({ checkout }: { checkout?: boolean }) {
   const { cart, setQty, setMethod, city } = useApp()
   const quote = quoteCart(cart, city)
@@ -692,6 +721,7 @@ export function CartBody({ checkout }: { checkout?: boolean }) {
   )
 }
 
+/* Ensar Sallahu: Cart overlay. */
 export function CartSheet({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const previous = document.body.style.overflow
@@ -710,6 +740,7 @@ export function CartSheet({ onClose }: { onClose: () => void }) {
   )
 }
 
+/* Ensar Sallahu: Fixed mobile bar that opens the cart. */
 export function MobileDock() {
   const { cart, city } = useApp()
   const [open, setOpen] = useState(false)
@@ -727,6 +758,7 @@ export function MobileDock() {
   )
 }
 
+/* Enesa Sejdiu: Loading placeholder state. */
 export function Loading({ label = 'Loading places near you' }: { label?: string }) {
   return (
     <div className="page" role="status">
@@ -744,6 +776,7 @@ export function Loading({ label = 'Loading places near you' }: { label?: string 
   )
 }
 
+/* Enesa Sejdiu: Error state for a failed page request. */
 export function ErrorNote({ message }: { message: string }) {
   return <div className="error-note">{message}</div>
 }

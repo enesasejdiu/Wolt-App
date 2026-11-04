@@ -1,11 +1,16 @@
+/* Leonis Rama: Development server. Venue data is proxied while the dev server is running. */
+
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { accountsPlugin } from './server/accounts'
 
 export default defineConfig({
-  plugins: [react()],
+  /* Leonis Rama: React plugin and local accounts plugin. */
+  plugins: [react(), accountsPlugin()],
   server: {
     port: 5173,
     proxy: {
+      /* Leonis Rama: Proxies venue pages used by the homepage, listings, and venue view. */
       '/wolt': {
         target: 'https://restaurant-api.wolt.com',
         changeOrigin: true,
@@ -15,6 +20,7 @@ export default defineConfig({
           'user-agent': 'Mozilla/5.0',
         },
       },
+      /* Stiljan Zeqiri: Proxies store assortment requests. */
       '/consumer': {
         target: 'https://consumer-api.wolt.com',
         changeOrigin: true,
@@ -24,6 +30,7 @@ export default defineConfig({
           'user-agent': 'Mozilla/5.0',
         },
       },
+      /* Ensar Sallahu: Proxies address geocoding. */
       '/nominatim': {
         target: 'https://nominatim.openstreetmap.org',
         changeOrigin: true,
@@ -33,6 +40,7 @@ export default defineConfig({
           'accept-language': 'en',
         },
       },
+      /* Ensar Sallahu: Proxies driving-route requests. */
       '/osrm': {
         target: 'https://router.project-osrm.org',
         changeOrigin: true,

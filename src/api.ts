@@ -1,5 +1,14 @@
+/*
+ * Venue data client. Requests are served by the development proxy.
+ * Leonis Rama: Request layer. Venue data is fetched through the proxy, not from an application-owned backend.
+ * Enesa Sejdiu: Homepage and city list.
+ * Rumejsa Polaku: Restaurant, store, and collection lists.
+ * Stiljan Zeqiri: Menu and store assortment.
+ */
+
 import type { Banner, City, DiscoveryPage, Menu, MenuItem, OptionGroup, Section, StoreCategory, Venue } from './types'
 
+/* Enesa Sejdiu: Cities available in the header selector. */
 export const CITIES: City[] = [
   { slug: 'pristina', name: 'Pristina', lat: 42.660596643112, lon: 21.160729663098635 },
   { slug: 'prizren', name: 'Prizren', lat: 42.21707050907415, lon: 20.743034525638308 },
@@ -7,13 +16,16 @@ export const CITIES: City[] = [
   { slug: 'ferizaj', name: 'Ferizaj', lat: 42.370263927929926, lon: 21.155777982899338 },
 ]
 
+/* Leonis Rama: In-memory cache of venues seen in this tab. */
 const memory = new Map<string, Venue>()
 
+/* Leonis Rama: Excludes adult-store listings from discovery results. */
 function isHiddenVenue(name?: string, description?: string) {
   const label = `${name || ''} ${description || ''}`.toLowerCase()
   return label.includes('sex shop') || label.includes('sex toy') || label.includes('erotic')
 }
 
+/* Leonis Rama: Restores cached venues from session storage. */
 function hydrateVenues() {
   try {
     const raw = sessionStorage.getItem('wolt-venues')
@@ -24,21 +36,23 @@ function hydrateVenues() {
       memory.set(venue.id, venue)
     }
   } catch {
-    /* ignore quota or private mode */
+    /* Leonis Rama: Ignores session storage when it is unavailable. */
   }
 }
 
 hydrateVenues()
 
+/* Leonis Rama: Persists recently seen venues for the current tab. */
 export function rememberVenues(list: Venue[]) {
   for (const venue of list) memory.set(venue.id, venue)
   try {
     sessionStorage.setItem('wolt-venues', JSON.stringify([...memory.values()].slice(-400)))
   } catch {
-    /* ignore */
+    /* Leonis Rama: Ignores a failed write when session storage is full. */
   }
 }
 
+/* Ensar Sallahu: Returns a cached venue for the saved-venues view. */
 export function peekVenue(id: string) {
   return memory.get(id) ?? null
 }
@@ -79,6 +93,7 @@ type RawSection = {
 }
 type RawPage = { page_title?: string; name?: string; sections?: RawSection[] }
 
+/* Rumejsa Polaku: Maps an API venue record to the listing model. */
 function asVenue(item: RawItem): Venue | null {
   const venue = item.venue
   if (!venue?.id) return null
@@ -105,6 +120,7 @@ function asVenue(item: RawItem): Venue | null {
   }
 }
 
+/* Enesa Sejdiu: Maps an API image record to a homepage banner. */
 function asBanner(item: RawItem): Banner | null {
   const image = item.image?.url
   if (!image) return null
@@ -117,6 +133,7 @@ function asBanner(item: RawItem): Banner | null {
   }
 }
 
+/* Leonis Rama: Normalizes an API page into renderable sections. */
 function normalize(page: RawPage): DiscoveryPage {
   const sections: Section[] = (page.sections || []).map((section) => {
     const items = section.items || []
@@ -141,8 +158,10 @@ function normalize(page: RawPage): DiscoveryPage {
   return { title: page.page_title || page.name || 'Wolt', sections }
 }
 
+/* Leonis Rama: In-flight request cache. */
 const inflight = new Map<string, Promise<unknown>>()
 
+/* Leonis Rama: Fetches JSON and deduplicates concurrent requests. */
 async function getJson<T>(path: string): Promise<T> {
   const existing = inflight.get(path)
   if (existing) return existing as Promise<T>
@@ -159,26 +178,32 @@ async function getJson<T>(path: string): Promise<T> {
   return promise
 }
 
+/* Enesa Sejdiu: Builds the location query for the selected city. */
 function query(city: City) {
   return `lat=${city.lat}&lon=${city.lon}`
 }
 
+/* Enesa Sejdiu: Loads homepage content for the selected city. */
 export function fetchFront(city: City) {
   return getJson<RawPage>(`/wolt/v1/pages/front?${query(city)}`).then(normalize)
 }
 
+/* Rumejsa Polaku: Loads the restaurant index for the selected city. */
 export function fetchRestaurants(city: City) {
   return getJson<RawPage>(`/wolt/v1/pages/restaurants?${query(city)}`).then(normalize)
 }
 
+/* Rumejsa Polaku: Loads the store index for the selected city. */
 export function fetchRetail(city: City) {
   return getJson<RawPage>(`/wolt/v1/pages/retail?${query(city)}`).then(normalize)
 }
 
+/* Rumejsa Polaku: Loads one venue collection. */
 export function fetchList(city: City, slug: string) {
   return getJson<RawPage>(`/wolt/v1/pages/venue-list/${encodeURIComponent(slug)}?${query(city)}`).then(normalize)
 }
 
+/* Stiljan Zeqiri: Resolves the venue opened from a listing card. */
 export async function findVenue(city: City, id: string) {
   const known = memory.get(id)
   if (known) return known
@@ -214,6 +239,7 @@ type RawMenu = {
   options?: RawOption[]
 }
 
+/* Stiljan Zeqiri: Maps item options into selectable groups. */
 function optionGroups(refs: RawItemOption[] | undefined, groups: Map<string, RawOption>): OptionGroup[] {
   return (refs || [])
     .map((ref) => {
@@ -234,6 +260,7 @@ function optionGroups(refs: RawItemOption[] | undefined, groups: Map<string, Raw
     .filter((group) => group.values.length > 0)
 }
 
+/* Stiljan Zeqiri: Loads menu categories, items, prices, and options. */
 export function fetchMenu(venueId: string): Promise<Menu> {
   return getJson<RawMenu>(`/wolt/v4/venues/${venueId}/menu`).then((data) => {
     const groups = new Map((data.options || []).map((option) => [option.id, option]))
@@ -283,11 +310,13 @@ type RawStorePayload = {
   metadata?: { next_page_token?: string | null }
 }
 
+/* Stiljan Zeqiri: Normalizes a store label to a single line. */
 function cleanLabel(value?: string) {
   const text = (value || '').replace(/\s+/g, ' ').trim()
   return text || 'Products'
 }
 
+/* Stiljan Zeqiri: Maps store categories, including nested aisles. */
 function mapStoreCategories(categories: RawStoreCategory[]): StoreCategory[] {
   return categories
     .filter((category) => category.slug)
@@ -300,6 +329,7 @@ function mapStoreCategories(categories: RawStoreCategory[]): StoreCategory[] {
     }))
 }
 
+/* Stiljan Zeqiri: Maps store products to the shared menu-item model. */
 function mapStoreItems(items: RawStoreItem[], categoryId: string, groups: Map<string, RawOption>): MenuItem[] {
   return items.map((item) => ({
     id: item.id,
@@ -313,16 +343,19 @@ function mapStoreItems(items: RawStoreItem[], categoryId: string, groups: Map<st
   }))
 }
 
+/* Stiljan Zeqiri: Builds the assortment URL for a store. */
 function assortmentUrl(slug: string, suffix = '') {
   return `/consumer/consumer-api/consumer-assortment/v1/venues/slug/${encodeURIComponent(slug)}/assortment${suffix}`
 }
 
+/* Stiljan Zeqiri: Loads the aisle catalog for a store. */
 export function fetchStoreCatalog(slug: string) {
   return getJson<RawStorePayload>(assortmentUrl(slug, '?language=en')).then((data) => ({
     categories: mapStoreCategories(data.categories || []),
   }))
 }
 
+/* Stiljan Zeqiri: Loads products for one store aisle. */
 export function fetchStoreShelf(slug: string, categorySlug: string, pageToken?: string | null) {
   const page = pageToken ? `&page_token=${encodeURIComponent(pageToken)}` : ''
   return getJson<RawStorePayload>(assortmentUrl(slug, `/categories/slug/${encodeURIComponent(categorySlug)}?language=en${page}`)).then((data) => {
@@ -334,6 +367,7 @@ export function fetchStoreShelf(slug: string, categorySlug: string, pageToken?: 
   })
 }
 
+/* Stiljan Zeqiri: Searches products within one store. */
 export async function searchStore(slug: string, query: string) {
   const res = await fetch(assortmentUrl(slug, '/items/search?language=en'), {
     method: 'POST',

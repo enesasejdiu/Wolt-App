@@ -1,3 +1,5 @@
+/* Enesa Sejdiu: Homepage and category views. */
+
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchFront } from '../api'
@@ -5,12 +7,14 @@ import { ErrorNote, HScroll, Loading, SectionTitle, VenueCard } from '../compone
 import { useApp } from '../state'
 import type { DiscoveryPage } from '../types'
 
+/* Enesa Sejdiu: Resolves a section link to a category or collection route. */
 function seeAllPath(seeAll: string | null) {
   if (!seeAll) return undefined
   if (seeAll === '__categories') return '/categories'
   return `/list/${seeAll}`
 }
 
+/* Enesa Sejdiu: Homepage for the selected city. */
 export function Discovery() {
   const { city } = useApp()
   const [page, setPage] = useState<DiscoveryPage | null>(null)
@@ -36,6 +40,7 @@ export function Discovery() {
   return (
     <div className="page">
       {page.sections.map((section) => {
+        /* Enesa Sejdiu: Promotional banner row. */
         if (section.template === 'banner-hero' && section.banners.length) {
           return (
             <section key={section.id} className="block">
@@ -49,6 +54,7 @@ export function Discovery() {
             </section>
           )
         }
+        /* Enesa Sejdiu: Category and brand tiles. */
         if (section.banners.length && !section.venues.length) {
           const categories = section.template === 'banner-small' && section.banners.some((banner) => banner.title)
           return (
@@ -65,6 +71,7 @@ export function Discovery() {
             </section>
           )
         }
+        /* Enesa Sejdiu: Horizontal venue row. */
         if (!section.venues.length) return null
         return (
           <section key={section.id} className="block">
@@ -83,6 +90,7 @@ export function Discovery() {
   )
 }
 
+/* Enesa Sejdiu: Full category index. */
 export function Categories() {
   const { city } = useApp()
   const [page, setPage] = useState<DiscoveryPage | null>(null)

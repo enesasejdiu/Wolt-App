@@ -1,5 +1,12 @@
+/*
+ * Checkout and authentication.
+ * Ensar Sallahu: Checkout form. Payment is a local preview and is not processed.
+ * Leonis Rama: Login and registration.
+ */
+
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { signIn, signUp } from '../accounts'
 import { CartBody } from '../components'
 import { money, quoteCart } from '../format'
 import { LiveMap } from '../LiveMap'
@@ -8,8 +15,9 @@ import { useApp } from '../state'
 
 const TIPS = [0, 100, 200, 300]
 
+/* Ensar Sallahu: Collects delivery details, contact, payment choice, and tip, then places the order. */
 export function Checkout() {
-  const { cart, city, address, setAddress, user, login, placeOrder } = useApp()
+  const { cart, city, address, setAddress, user, placeOrder } = useApp()
   const navigate = useNavigate()
   const [details, setDetails] = useState('')
   const placing = useRef(false)
@@ -50,7 +58,6 @@ export function Checkout() {
     }
     const contact = { name: name.trim(), phone: phone.trim(), email: email.trim() }
     placing.current = true
-    login(contact)
     const order = placeOrder({
       cityName: city.name,
       address: cart.method === 'pickup' ? cart.venue.address || cart.venue.name : address.trim(),
@@ -166,33 +173,107 @@ export function Checkout() {
   )
 }
 
+/* Leonis Rama: Login page. It asks only for the email and password of an existing account. */
 export function LoginPage() {
-  const { login, user } = useApp()
+  const { login } = useApp()
   const navigate = useNavigate()
-  const [name, setName] = useState(user?.name || '')
-  const [email, setEmail] = useState(user?.email || '')
-  const [phone, setPhone] = useState(user?.phone || '+383 ')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => { document.title = 'Log in | Wolt' }, [])
 
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    setError('')
+    setBusy(true)
+    try {
+      login(await signIn({ email: email.trim(), password }))
+      navigate('/')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not log in.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="page auth-login">
+      <h1>Welcome back</h1>
+      <p className="lede">Log in with your email and password.</p>
+      <form className="stack" onSubmit={submit}>
+        <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" required /></label>
+        <label>Password
+          <input
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            type="password"
+            autoComplete="current-password"
+            required
+          />
+        </label>
+        {error && <p className="form-error">{error}</p>}
+        <button className="btn btn-blue" type="submit" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
+        <p className="auth-switch">New to Wolt? <Link to="/register" className="text-link">Create an account</Link></p>
+        <Link to="/" className="text-link">Continue without an account</Link>
+      </form>
+    </div>
+  )
+}
+
+/* Leonis Rama: Registration page. It collects the profile and the credentials for a new account. */
+export function RegisterPage() {
+  const { login } = useApp()
+  const navigate = useNavigate()
+  const [name, setName] = useState('')
+  const [address, setAddress] = useState('')
+  const [phone, setPhone] = useState('+383 ')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => { document.title = 'Create account | Wolt' }, [])
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    setError('')
+    setBusy(true)
+    try {
+      login(await signUp({ name: name.trim(), address: address.trim(), phone: phone.trim(), email: email.trim(), password }))
+      navigate('/')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create the account.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="page narrow">
-      <h1>Log in</h1>
-      <p className="lede">Save your details on this device so checkout is already filled in.</p>
-      <form
-        className="stack"
-        onSubmit={(event) => {
-          event.preventDefault()
-          if (name.trim().length < 2) return
-          login({ name: name.trim(), email: email.trim(), phone: phone.trim() })
-          navigate('/orders')
-        }}
-      >
-        <label>Name<input value={name} onChange={(event) => setName(event.target.value)} required /></label>
-        <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" /></label>
-        <label>Phone<input value={phone} onChange={(event) => setPhone(event.target.value)} /></label>
-        <button className="btn btn-blue" type="submit">Continue</button>
-        <Link to="/" className="text-link">Continue without an account</Link>
+      <h1>Create account</h1>
+      <p className="lede">Your details are saved in a local accounts file on this computer.</p>
+      <form className="stack" onSubmit={submit}>
+        <h2>Your details</h2>
+        <label>Full name<input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required /></label>
+        <label>Address<input value={address} onChange={(event) => setAddress(event.target.value)} autoComplete="street-address" placeholder="Street and number" required /></label>
+        <label>Phone number<input value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" required /></label>
+        <h2>Account</h2>
+        <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" required /></label>
+        <label>Password
+          <input
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            type="password"
+            autoComplete="new-password"
+            minLength={6}
+            required
+          />
+        </label>
+        {error && <p className="form-error">{error}</p>}
+        <button className="btn btn-blue" type="submit" disabled={busy}>{busy ? 'Creating account…' : 'Create account'}</button>
+        <p className="auth-switch">Already have an account? <Link to="/login" className="text-link">Log in</Link></p>
       </form>
     </div>
   )

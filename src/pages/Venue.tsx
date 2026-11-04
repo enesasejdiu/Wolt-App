@@ -1,3 +1,5 @@
+/* Stiljan Zeqiri: Venue detail, menu, and store assortment. */
+
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { fetchMenu, fetchStoreCatalog, fetchStoreShelf, findVenue, searchStore } from '../api'
@@ -7,6 +9,7 @@ import { LiveMap } from '../LiveMap'
 import { useApp } from '../state'
 import type { CartVenue, Menu, MenuItem, StoreCategory, Venue } from '../types'
 
+/* Stiljan Zeqiri: Venue page. Displays details and adds items to the order. */
 export function VenuePage() {
   const { id = '' } = useParams()
   const { city, cart, setMethod, favorites, toggleFavorite } = useApp()
@@ -109,12 +112,14 @@ export function VenuePage() {
   if (!venue) return <div className="page"><h1>Place not found</h1><Link to={store ? '/stores' : '/restaurants'}>Back</Link></div>
   const place = venue
 
+  /* Stiljan Zeqiri: Sets delivery or pickup for this venue. */
   function chooseMethod(next: 'delivery' | 'pickup') {
     if (next === 'delivery' && (!place.delivers || !place.online)) return
     setPreview(next)
     if (!cart.venue || cart.venue.id === place.id || !cart.lines.length) setMethod(next)
   }
 
+  /* Stiljan Zeqiri: Loads the next page of products in a store aisle. */
   async function showMore(shelf: { id: string; slug: string; next: string | null }) {
     if (!shelf.next) return
     const page = await fetchStoreShelf(place.slug, shelf.slug, shelf.next)
