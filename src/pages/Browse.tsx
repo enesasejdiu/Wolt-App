@@ -31,6 +31,7 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
   const [venues, setVenues] = useState<Venue[] | null>(null)
   const [categories, setCategories] = useState<Banner[]>([])
   const [title, setTitle] = useState(kind === 'restaurants' ? 'Restaurants' : 'Stores')
+  const [failed, setFailed] = useState(false)
   const [sort, setSort] = useState('recommended')
   const [price, setPrice] = useState(0)
   const [openOnly, setOpenOnly] = useState(false)
@@ -40,6 +41,7 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
     let cancel = false
     setVenues(null)
     setCategories([])
+    setFailed(false)
     setShown(48)
     const load = kind === 'restaurants' ? fetchRestaurants(city) : fetchRetail(city)
     load
@@ -49,7 +51,11 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
         setCategories(kind === 'retail' ? page.sections.flatMap((section) => section.banners).filter((banner) => banner.title) : [])
         setVenues(venuesOf(page.sections))
       })
-      .catch(() => { if (!cancel) setVenues([]) })
+      .catch(() => {
+        if (cancel) return
+        setFailed(true)
+        setVenues([])
+      })
     return () => { cancel = true }
   }, [city, kind])
 
@@ -84,6 +90,14 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
   }, [venues, openOnly, price, tag, sort, city])
 
   if (!venues) return <Loading label={kind === 'restaurants' ? 'Finding restaurants' : 'Finding stores'} />
+  if (failed) {
+    return (
+      <div className="page">
+        <h1>{title}</h1>
+        <p className="lede">Could not load places in {city.name}. Check your connection and try again.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="page">
