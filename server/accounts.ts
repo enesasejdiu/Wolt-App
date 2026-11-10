@@ -19,7 +19,7 @@ type Account = {
   createdAt: string
 }
 
-type PublicAccount = Pick<Account, 'id' | 'name' | 'email' | 'phone' | 'address'>
+type PublicAccount = Pick<Account, 'id' | 'name' | 'email' | 'phone' | 'address' | 'createdAt'>
 
 /* Leonis Rama: Reads data/accounts.json. */
 function load(): Account[] {
@@ -50,6 +50,7 @@ function publicAccount(account: Account): PublicAccount {
     email: account.email,
     phone: account.phone,
     address: account.address || '',
+    createdAt: account.createdAt,
   }
 }
 
@@ -105,10 +106,62 @@ function validEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
+/* Stiljan Zeqiri: Checks a password against the stored hash in constant time. */
+function passwordMatches(account: Account, password: string) {
+  const actual = Buffer.from(account.passwordHash, 'hex')
+  const given = Buffer.from(hashPassword(password, account.salt), 'hex')
+  return actual.length === given.length && timingSafeEqual(actual, given)
+}
+
+/* Stiljan Zeqiri: Finds the account behind a profile request. The id is only returned to the owner at login. */
+function owner(res: ServerResponse, body: Record<string, unknown>, accounts: Account[]) {
+  const id = text(body.id)
+  const account = id ? accounts.find((item) => item.id === id) : undefined
+  if (!account) send(res, 404, { error: 'Log in again to edit your profile.' })
+  return account
+}
+
+/* Stiljan Zeqiri: Saves edited name, email, phone, and address. */
+function updateProfile(res: ServerResponse, body: Record<string, unknown>, accounts: Account[]) {
+  const account = owner(res, body, accounts)
+  if (!account) return true
+  const name = text(body.name)
+  const email = text(body.email).toLowerCase()
+  const phone = text(body.phone)
+  const address = text(body.address)
+  const detailsError = profileError(name, address, phone)
+  if (detailsError) return send(res, 400, { error: detailsError }), true
+  if (!validEmail(email)) return send(res, 400, { error: 'Add a valid email.' }), true
+  if (accounts.some((item) => item.id !== account.id && item.email === email)) {
+    send(res, 409, { error: 'Another account already uses this email.' })
+    return true
+  }
+  Object.assign(account, { name, email, phone, address })
+  save(accounts)
+  send(res, 200, { user: publicAccount(account) })
+  return true
+}
+
+/* Stiljan Zeqiri: Replaces the password after the current one is confirmed. */
+function changePassword(res: ServerResponse, body: Record<string, unknown>, accounts: Account[]) {
+  const account = owner(res, body, accounts)
+  if (!account) return true
+  const current = typeof body.password === 'string' ? body.password : ''
+  const next = typeof body.next === 'string' ? body.next : ''
+  if (!passwordMatches(account, current)) return send(res, 401, { error: 'Your current password is wrong.' }), true
+  if (next.length < 6) return send(res, 400, { error: 'Use a password of at least 6 characters.' }), true
+  account.salt = randomBytes(16).toString('hex')
+  account.passwordHash = hashPassword(next, account.salt)
+  save(accounts)
+  send(res, 200, { user: publicAccount(account) })
+  return true
+}
+
 /* Leonis Rama: Handles account creation and password verification. */
 async function handle(req: IncomingMessage, res: ServerResponse) {
   const path = (req.url || '').split('?')[0]
-  if (path !== '/api/signup' && path !== '/api/signin') return false
+  /* Stiljan Zeqiri: Profile and password routes are served next to signup and signin. */
+  if (!['/api/signup', '/api/signin', '/api/profile', '/api/password'].includes(path)) return false
   if (req.method !== 'POST') {
     send(res, 405, { error: 'Use POST.' })
     return true
@@ -156,6 +209,10 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     send(res, 201, { user: publicAccount(account) })
     return true
   }
+
+  /* Stiljan Zeqiri: Profile edits and password changes. */
+  if (path === '/api/profile') return updateProfile(res, body, accounts)
+  if (path === '/api/password') return changePassword(res, body, accounts)
 
   const account = accounts.find((item) => item.email === email)
   const salt = account?.salt || 'missing-account-salt'

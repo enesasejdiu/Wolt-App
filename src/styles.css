@@ -812,6 +812,71 @@ legend em { margin-left: auto; font-style: normal; color: var(--blue); font-size
 .order-row span { display: flex; flex-direction: column; }
 .order-row small { color: var(--muted); }
 
+/* Stiljan Zeqiri: Profile page with a side menu, editable rows, and settings cards. */
+.profile {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: calc(var(--margin) * 2);
+  align-items: start;
+  max-width: 960px;
+}
+.profile-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: calc(var(--header) + var(--margin));
+}
+.profile-nav a, .profile-nav button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--ink);
+}
+.profile-nav small { color: var(--muted); font-weight: 600; }
+.profile-nav a:hover, .profile-nav button:hover { background: var(--soft); }
+.profile-nav .on, .profile-nav .on:hover { background: rgba(0, 157, 224, .1); color: var(--blue); }
+.profile-head { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+.profile-head h1 { margin: 0; overflow-wrap: anywhere; }
+.profile-avatar { width: 72px; height: 72px; display: grid; place-items: center; font-size: 30px; flex: none; }
+.profile-main h2 { font-size: 20px; margin-bottom: 8px; }
+.profile-rows { border-top: 1px solid var(--line); margin-bottom: var(--margin); }
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.profile-row > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.profile-row small { color: var(--muted); font-size: 13px; font-weight: 600; }
+.profile-row strong { font-weight: 600; overflow-wrap: anywhere; }
+.profile-row .text-link { background: none; border: 0; padding: 6px 0; flex: none; }
+.profile-row.is-editing { flex-direction: column; align-items: stretch; gap: 10px; }
+.profile-row label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 14px; }
+.profile-row input { border: 1px solid #e4e4e4; background: #fff; border-radius: 10px; height: 42px; padding: 0 12px; width: 100%; }
+.profile-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.profile-actions .btn { height: 40px; }
+.profile-card { max-width: 480px; }
+.profile-main > h1 { margin-bottom: 16px; }
+.form-ok { color: #1b7f3b; font-weight: 700; }
+@media (max-width: 760px) {
+  .profile { grid-template-columns: minmax(0, 1fr); gap: var(--margin); }
+  .profile-nav { position: static; flex-direction: row; overflow-x: auto; gap: 8px; scrollbar-width: none; }
+  .profile-nav a, .profile-nav button { flex: none; background: var(--soft); border-radius: 99px; padding: 8px 14px; font-size: 14px; }
+  .profile-avatar { width: 56px; height: 56px; font-size: 24px; }
+  .profile-card { max-width: none; }
+}
+
 /* Enesa Sejdiu: Loading state. */
 .loading {
   max-width: var(--max);
