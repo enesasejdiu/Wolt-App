@@ -29,8 +29,8 @@ export function Discovery() {
   }, [city])
 
   useEffect(() => {
-    document.title = `Wolt | ${city.name}`
-  }, [city.name])
+    document.title = 'Wolt | Food, groceries and more'
+  }, [])
 
   if (!page) return <Loading />
 
