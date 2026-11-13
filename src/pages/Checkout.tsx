@@ -41,6 +41,9 @@ export function Checkout() {
 
   const quote = quoteCart(cart, city, tip)
 
+  /* Ensar Sallahu: A card order needs a 16-digit number, an MM/YY expiry, and a CVC. */
+  const cardComplete = card.replace(/\D/g, '').length >= 16 && /^\d{2}\/\d{2}$/.test(expiry) && cvc.replace(/\D/g, '').length >= 3
+
   function place(event: FormEvent) {
     event.preventDefault()
     if (!cart.venue) return
@@ -50,9 +53,7 @@ export function Checkout() {
     let last4: string | undefined
     let paymentMethod = payment
     if (payment === 'card') {
-      const digits = card.replace(/\D/g, '')
-      const cardComplete = digits.length >= 16 && /^\d{2}\/\d{2}$/.test(expiry) && cvc.replace(/\D/g, '').length >= 3
-      if (cardComplete) last4 = digits.slice(-4)
+      if (cardComplete) last4 = card.replace(/\D/g, '').slice(-4)
       else paymentMethod = 'cash'
     }
     const contact = {
@@ -150,6 +151,9 @@ export function Checkout() {
                   <input inputMode="numeric" placeholder="123" value={cvc} onChange={(event) => setCvc(event.target.value)} />
                 </label>
               </div>
+            )}
+            {payment === 'card' && !cardComplete && (
+              <p className="fine card-warn">Card details are incomplete. If you place the order now, it will be marked as cash.</p>
             )}
             <p className="fine">This checkout is a local preview. Your card is not sent anywhere and no real Wolt order is placed.</p>
           </section>
