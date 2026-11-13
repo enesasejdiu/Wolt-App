@@ -72,6 +72,11 @@ export function VenueIndex({ kind }: { kind: 'restaurants' | 'retail' }) {
   }, [venues])
   const [tag, setTag] = useState('')
 
+  /* Rumejsa Polaku: Clears the cuisine filter when the city changes, because each city has its own tags. */
+  useEffect(() => {
+    setTag('')
+  }, [city])
+
   const filtered = useMemo(() => {
     let list = [...(venues || [])]
     if (openOnly) list = list.filter((venue) => venue.online)
