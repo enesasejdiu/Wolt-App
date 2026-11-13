@@ -1,8 +1,14 @@
 /* Leonis Rama: Development server. Venue data is proxied while the dev server is running. */
 
-import { defineConfig } from 'vite'
+import { defineConfig, type ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 import { accountsPlugin } from './server/accounts'
+
+/* Stiljan Zeqiri: Removes browser cookies before a request is forwarded to an outside service.
+   Cookies left on localhost by other projects made Wolt answer 403, and the homepage stayed empty. */
+const dropCookies: ProxyOptions['configure'] = (proxy) => {
+  proxy.on('proxyReq', (proxyReq) => proxyReq.removeHeader('cookie'))
+}
 
 export default defineConfig({
   /* Leonis Rama: React plugin and local accounts plugin. */
@@ -14,6 +20,7 @@ export default defineConfig({
       '/wolt': {
         target: 'https://restaurant-api.wolt.com',
         changeOrigin: true,
+        configure: dropCookies,
         rewrite: (path) => path.replace(/^\/wolt/, ''),
         headers: {
           accept: 'application/json',
@@ -24,6 +31,7 @@ export default defineConfig({
       '/consumer': {
         target: 'https://consumer-api.wolt.com',
         changeOrigin: true,
+        configure: dropCookies,
         rewrite: (path) => path.replace(/^\/consumer/, ''),
         headers: {
           accept: 'application/json',
@@ -34,6 +42,7 @@ export default defineConfig({
       '/nominatim': {
         target: 'https://nominatim.openstreetmap.org',
         changeOrigin: true,
+        configure: dropCookies,
         rewrite: (path) => path.replace(/^\/nominatim/, ''),
         headers: {
           'user-agent': 'WoltKosovoPreview/1.0',
@@ -44,6 +53,7 @@ export default defineConfig({
       '/osrm': {
         target: 'https://router.project-osrm.org',
         changeOrigin: true,
+        configure: dropCookies,
         rewrite: (path) => path.replace(/^\/osrm/, ''),
       },
     },
