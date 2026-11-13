@@ -164,17 +164,23 @@ export function ListPage() {
   const { city } = useApp()
   const [venues, setVenues] = useState<Venue[] | null>(null)
   const [title, setTitle] = useState('Places')
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     let cancel = false
     setVenues(null)
+    setFailed(false)
     fetchList(city, slug)
       .then((page) => {
         if (cancel) return
         setTitle(page.title || 'Places')
         setVenues(venuesOf(page.sections))
       })
-      .catch(() => { if (!cancel) setVenues([]) })
+      .catch(() => {
+        if (cancel) return
+        setFailed(true)
+        setVenues([])
+      })
     return () => { cancel = true }
   }, [city, slug])
 
@@ -183,6 +189,14 @@ export function ListPage() {
   }, [title])
 
   if (!venues) return <Loading />
+  if (failed) {
+    return (
+      <div className="page">
+        <h1>{title}</h1>
+        <p className="lede">Could not load this collection. Check your connection and try again.</p>
+      </div>
+    )
+  }
   return (
     <div className="page">
       <h1>{title}</h1>
