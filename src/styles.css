@@ -716,6 +716,7 @@ legend em { margin-left: auto; font-style: normal; color: var(--blue); font-size
 .card-grid { display: grid; grid-template-columns: 1.4fr .8fr .6fr; gap: 8px; }
 .form-error { color: #c62828; font-weight: 700; }
 .text-link { color: var(--blue); font-weight: 700; text-align: center; }
+.card-warn { color: #a15c00; font-weight: 600; }
 .auth-switch { margin: 0; text-align: center; color: var(--muted); }
 .auth-login .stack label { text-align: left; }
 
