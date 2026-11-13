@@ -204,6 +204,9 @@ export function SearchPage() {
 
   useEffect(() => {
     document.title = q ? `${q} | Wolt` : 'Search | Wolt'
+  }, [q])
+
+  useEffect(() => {
     let cancel = false
     Promise.all([fetchRestaurants(city), fetchRetail(city)])
       .then(([restaurants, retail]) => {
